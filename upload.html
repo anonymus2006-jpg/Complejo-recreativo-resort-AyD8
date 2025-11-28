@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Galería — Complejo AyD</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        /* Estilos mínimos para el editor modal */
+        
+        .editor-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 12000;
+            padding: 20px;
+        }
+        
+        .editor-sheet {
+            background: #111;
+            color: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            width: min(920px, 98%);
+            max-height: 92vh;
+            overflow: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+        
+        .editor-top {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .editor-canvas-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        
+        .editor-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .editor-controls label {
+            font-size: 0.85rem;
+            color: #ddd;
+        }
+        
+        .editor-controls input[type=range] {
+            width: 140px;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            background: linear-gradient(90deg, #ff6b35, #ff9a66);
+            border: 0;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .btn.ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .preview-card img {
+            cursor: zoom-in;
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        /* enlace volver en negro */
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 0.6rem;
+            color: #000;
+            background: transparent;
+            border-radius: 6px;
+            padding: 6px 10px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        /* impedir selección/context menu en previews */
+        
+        .preview-card img,
+        .preview-card video {
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        
+        .featured-video {
+            max-width: 920px;
+            margin: 0 auto 1rem;
+        }
+        
+        .featured-video video {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background: #000;
+        }
+        
+        .video-caption {
+            text-align: center;
+            margin-top: 8px;
+            color: #ddd;
+            font-size: .95rem;
+        }
+        /* Modo oscuro */
+        
+        body {
+            background: #0b0f14;
+            color: #fff;
+        }
+        
+        .upload-page {
+            background: #0b0f14;
+            color: #fff;
+        }
+        
+        .preview-card {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .preview-card figcaption {
+            display: none;
+            /* ocultar nombres de archivos */
+        }
+        
+        header {
+            background: #0b0f14;
+        }
+        
+        footer {
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container upload-page">
+        <header style="text-align:center;margin:2rem 0;">
+            <h1>Galería — Complejo Recreativo AyD</h1>
+            <a class="back-link" href="../index.html" style="display:inline-block;margin-top:1rem;padding:12px 24px;background:linear-gradient(90deg,#ff6b35,#ff9a66);color:#fff;border-radius:8px;font-weight:700;text-decoration:none;font-size:1.05rem;box-shadow:0 6px 18px rgba(255,107,53,0.25);transition:transform 0.2s,box-shadow 0.2s;"
+                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 28px rgba(255,107,53,0.35)';" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 6px 18px rgba(255,107,53,0.25)';">Volver</a>
+        </header>
+
+        <!-- Video: 1 .mp4 -->
+        <section class="featured-video" aria-live="polite">
+            <figure class="preview-card preview-video">
+                <video id="featuredVideo" controls preload="metadata" playsinline>
+                  <source src="./1.mp4" type="video/mp4">
+                </video>
+                <figcaption id="fvCaption" class="video-caption">Cargando 1 .mp4…</figcaption>
+            </figure>
+        </section>
+
+        <section class="upload-area" id="uploadArea" aria-hidden="true">
+            <!-- Upload deshabilitado intencionalmente (texto eliminado) -->
+        </section>
+
+        <section class="preview-wrap">
+            <div class="preview-grid" id="previewGrid" aria-live="polite"></div>
+        </section>
+
+        <footer style="text-align:center;margin:2rem 0;color:#ddd;font-size:.9rem;">
+        </footer>
+    </main>
+
+    <!-- Editor modal -->
+    <div id="editorModal" class="editor-modal" role="dialog" aria-hidden="true">
+        <div class="editor-sheet" role="document">
+            <div class="editor-top">
+                <strong id="editorTitle">Editar imagen</strong>
+                <div style="flex:1"></div>
+                <button id="closeEditor" class="btn ghost">Cerrar</button>
+            </div>
+
+            <div class="editor-canvas-wrap">
+                <canvas id="editorCanvas"></canvas>
+            </div>
+
+            <div class="editor-controls">
+                <label>Brillo <input id="brightness" type="range" min="50" max="150" value="100"></label>
+                <label>Contraste <input id="contrast" type="range" min="50" max="150" value="100"></label>
+                <label>Grises <input id="grayscale" type="range" min="0" max="100" value="0"></label>
+                <label>Rotar <button id="rotLeft" class="btn ghost">⟲</button> <button id="rotRight"
+                        class="btn ghost">⟳</button></label>
+                <label>Escala <input id="scale" type="range" min="50" max="150" value="100"></label>
+            </div>
+
+            <div class="editor-actions">
+                <button id="resetEditor" class="btn ghost">Reset</button>
+                <button id="downloadEdited" class="btn">Descargar editada</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Cargar video 1 .mp4 ---
+        (function() {
+            const fv = document.getElementById('featuredVideo');
+            const caption = document.getElementById('fvCaption');
+            if (!fv) return;
+
+            fv.load();
+
+            fv.addEventListener('loadedmetadata', () => {
+                caption.style.display = 'none'; // ocultar caption cuando esté listo
+            });
+
+            fv.addEventListener('error', () => {
+                caption.textContent = 'Error: verifica que 1 .mp4 exista en esta carpeta.';
+            });
+        })();
+
+        // --- Galería de imágenes ---
+        const preloadedFiles = [{
+            name: '1.jpg',
+            src: './1.jpg',
+            type: 'image'
+        }, {
+            name: '2.jpg',
+            src: './2.jpg',
+            type: 'image'
+        }, {
+            name: '3.jpg',
+            src: './3.jpg',
+            type: 'image'
+        }, {
+            name: '4.jpg',
+            src: './4.jpg',
+            type: 'image'
+        }];
+
+        const previewGrid = document.getElementById('previewGrid');
+
+        function renderGallery() {
+            previewGrid.innerHTML = '';
+            preloadedFiles.forEach(file => {
+                if (file.type === 'image') {
+                    const fig = document.createElement('figure');
+                    fig.className = 'preview-card';
+                    fig.style.position = 'relative';
+                    fig.innerHTML = `
+                        <img src="${file.src}" alt="${file.name}" loading="lazy" draggable="false" oncontextmenu="return false;" style="width:100%;height:auto;border-radius:8px;">
+                        <div class="actions" style="position:absolute;bottom:12px;right:12px;opacity:0;transition:opacity 0.2s;">
+                            <button class="btn-edit btn ghost" data-src="${file.src}" data-name="${file.name}" style="padding:8px 12px;font-size:0.9rem;">✎ Editar</button>
+                        </div>
+                    `;
+                    fig.addEventListener('mouseenter', () => fig.querySelector('.actions').style.opacity = '1');
+                    fig.addEventListener('mouseleave', () => fig.querySelector('.actions').style.opacity = '0');
+                    previewGrid.appendChild(fig);
+                }
+            });
+
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const src = btn.getAttribute('data-src');
+                    const name = btn.getAttribute('data-name');
+                    openEditor(src, name);
+                });
+            });
+        }
+
+        // --- Editor de imágenes (canvas) ---
+        const modal = document.getElementById('editorModal');
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        const brightness = document.getElementById('brightness');
+        const contrast = document.getElementById('contrast');
+        const grayscale = document.getElementById('grayscale');
+        const scale = document.getElementById('scale');
+        const rotLeft = document.getElementById('rotLeft');
+        const rotRight = document.getElementById('rotRight');
+        const closeEditor = document.getElementById('closeEditor');
+        const resetEditor = document.getElementById('resetEditor');
+        const downloadEdited = document.getElementById('downloadEdited');
+        const editorTitle = document.getElementById('editorTitle');
+
+        let originalImage = new Image();
+        let imgName = '';
+        let rotation = 0;
+        let currentScale = 1;
+
+        function openEditor(src, name) {
+            imgName = name;
+            originalImage = new Image();
+            originalImage.crossOrigin = 'anonymous';
+            originalImage.onload = () => {
+                rotation = 0;
+                currentScale = 1;
+                brightness.value = 100;
+                contrast.value = 100;
+                grayscale.value = 0;
+                scale.value = 100;
+                fitCanvasToImage();
+                drawImageToCanvas();
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+                editorTitle.textContent = 'Editar — ' + imgName;
+            };
+            originalImage.onerror = () => alert('No se pudo cargar: ' + name);
+            originalImage.src = src;
+        }
+
+        function fitCanvasToImage() {
+            const maxDim = Math.max(originalImage.width, originalImage.height);
+            const ratio = Math.min(900 / maxDim, 1);
+            canvas.width = Math.round(originalImage.width * ratio);
+            canvas.height = Math.round(originalImage.height * ratio);
+        }
+
+        function computeFilter() {
+            return `brightness(${brightness.value}%) contrast(${contrast.value}%) grayscale(${grayscale.value}%)`;
+        }
+
+        function drawImageToCanvas() {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.scale(currentScale, currentScale);
+            ctx.filter = computeFilter();
+            ctx.drawImage(originalImage, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        [brightness, contrast, grayscale, scale].forEach(el => {
+            el.addEventListener('input', () => {
+                if (el === scale) currentScale = scale.value / 100;
+                drawImageToCanvas();
+            });
+        });
+
+        rotLeft.addEventListener('click', () => {
+            rotation -= 90;
+            drawImageToCanvas();
+        });
+        rotRight.addEventListener('click', () => {
+            rotation += 90;
+            drawImageToCanvas();
+        });
+        closeEditor.addEventListener('click', closeModal);
+        resetEditor.addEventListener('click', () => {
+            brightness.value = 100;
+            contrast.value = 100;
+            grayscale.value = 0;
+            scale.value = 100;
+            rotation = 0;
+            currentScale = 1;
+            drawImageToCanvas();
+        });
+
+        downloadEdited.addEventListener('click', () => {
+            const data = canvas.toDataURL('image/jpeg', 0.92);
+            const a = document.createElement('a');
+            a.href = data;
+            a.download = 'editada-' + imgName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+
+        function closeModal() {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Inicializar
+        renderGallery();
+    </script>
+</body>
+
+</html>
